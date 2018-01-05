@@ -75,12 +75,13 @@ def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
 #    for i in range(sx):
 #        for j in range(sy):
 #            if MapR[i,j + int(MapL[i,j])]+MapL[i,j] !=0:
-#                MapL[i,j] = 0
+#                MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
 #                
 #    for i in range(sx):
 #        for j in range(sy):
 #            if MapL[i,j + int(MapR[i,j])]+MapR[i,j] !=0:
-#                MapR[i,j] = 0
+#                MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
+
                 
     return (MapL, MapR)
     
@@ -113,16 +114,16 @@ def getDisparityMap(L, R, N, M, scale):
     (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/4, False)
     minL = MapL.min()
     minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),3)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),3)+minR
+    MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
+    MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
     plotFig(MapL,N)
     plotFig(MapR,N)
     
     (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/2, False)
     minL = MapL.min()
     minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
+    MapL = cv2.medianBlur(np.uint8(MapL-minL),7)+minL
+    MapR = cv2.medianBlur(np.uint8(MapR-minR),7)+minR
     plotFig(MapL,N)
     plotFig(MapR,N)
     
@@ -139,7 +140,7 @@ def getDisparityMap(L, R, N, M, scale):
 
 def main():
     N = 7 #Patch size
-    M = 3 #Serach readius
+    M = 2 #Serach readius
     (L, R) = loadImages()
     (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
 
