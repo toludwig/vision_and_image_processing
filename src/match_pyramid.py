@@ -1,26 +1,33 @@
-import numpy as np
 from skimage import img_as_float
 from skimage.io import imread
 from skimage.transform import rescale
 from skimage.feature import corner_harris, corner_peaks
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-def pyramid_match(L, R):
+def match_layer(L, R, N):
+    '''
+    L and R are the left and right images
+    N is the patch size (side length of the square patch)
+    '''
     l = rescale(L, 0.5)
     r = rescale(R, 0.5)
-
-    N = 5
-    Rows = len(l)//N
-    Columns = l.shape()[1]//N
-    mapping = numpy.zeros((len(l)//N + 1, len(r)//N + 1))
+    Rows, Cols = (s//N for s in np.shape(l))
+    disparities = np.zeros((Rows, Cols))
 
     for row in range(Rows):
         l_row = l[row*N : (row+1)*N]
         r_row = r[row*N : (row+1)*N]
-        partitions = [k*N for k in range(len(l_row)//N)]
-        row_mapping = match_patches(np.split(l_row, partitions, axis=1),
-                                    np.split(r_row, partitions, axis=1))
-        match
+        partitions = [k*N for k in range(1, Cols+1)]
+        l_patches = np.split(l_row, partitions, axis=1)[:-1]
+        r_patches = np.split(r_row, partitions, axis=1)[:-1]
+        row_mapping = match_patches(l_patches, r_patches)
+        for i, j in row_mapping.items():
+            disparities[row, i] = j-i # how much is patch in r
+            # shifted to the right relative to corr. patch in l
+    return disparities
+
 
 def match_patches(a_patches, b_patches):
     # build up a similarity matrix
@@ -41,7 +48,18 @@ def match_patches(a_patches, b_patches):
 
 
 if __name__ == "__main__":
-    L = img_as_float("data/TsukubaL.png")
-    R = img_as_float("data/TsukubaR.png")
+    # L = img_as_float(imread("../data/TsukubaL.png", as_grey=True))
+    # R = img_as_float(imread("../data/TsukubaR.png", as_grey=True))
 
-    pyramid_match(L, R)
+    # L = img_as_float(imread("../data/map/im0.pgm", as_grey=True))
+    # R = img_as_float(imread("../data/map/im1.pgm", as_grey=True))
+
+    L = np.arange(100).reshape(10, 10)
+    R = L+1
+
+    disp = match_layer(L, R, 1)
+    print(disp)
+
+    plt.figure()
+    plt.imshow(disp)
+    plt.show()
