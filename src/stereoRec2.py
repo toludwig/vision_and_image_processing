@@ -26,21 +26,19 @@ def scaleMap(I, sx, sy, N):
     I = cv2.resize(I, (sy,sx))
     I = I + minn
     B = cv2.copyMakeBorder(I,halfwidth,halfwidth,halfwidth,halfwidth,cv2.BORDER_CONSTANT)
-    print(I.min(), I.max())
     return B
 
 
 def computeMap(L, R, N, M, scale, OldMap):
-    
     OldMap = OldMap.astype(int)
     (rowss, colss) = L.shape
     L = scaleIm(L, scale, N)
     R = scaleIm(R, scale, N)
-  
+
     halfwidth = int((N-1)/2)
     (rows, cols) = L.shape
     rows = rows
-    cols = cols 
+    cols = cols
     NewMap = np.zeros((rows, cols))
     for rowInd in range(halfwidth, rows - halfwidth):
         for colInd in range(halfwidth, cols - halfwidth):
@@ -49,26 +47,24 @@ def computeMap(L, R, N, M, scale, OldMap):
             rrow = R[rowInd-halfwidth:rowInd+halfwidth+1,max(0,offset - M - halfwidth):min(offset + M + halfwidth+1, cols)]
             signal = match_template(rrow, lrow)
             signInd = int(np.argmax(signal))
-            
+
             if signal[0,signInd] < 0.5:
                 NewMap[rowInd, colInd] = 0
             else:
                 NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
-                
     return NewMap
 
 def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
     HW = int((N-1)/2)
     (sx,sy) = scaleIm(L, scale, N).shape
     (mx,my) = MapL.shape
-    
+
     if isFirst == False:
         MapL = scaleMap(MapL[HW:mx-HW,HW:my-HW], sx-2*HW, sy-2*HW, N)
         MapL = MapL*2
         MapR = scaleMap(MapR[HW:mx-HW,HW:my-HW], sx-2*HW, sy-2*HW, N)
         MapR = MapR*2
 
-        
     MapL = computeMap(L, R, N, M, scale, MapL)
     MapR = computeMap(R, L, N, M, scale, MapR)
 
@@ -76,15 +72,13 @@ def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
 #        for j in range(sy):
 #            if MapR[i,j + int(MapL[i,j])]+MapL[i,j] !=0:
 #                MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
-#                
 #    for i in range(sx):
 #        for j in range(sy):
 #            if MapL[i,j + int(MapR[i,j])]+MapR[i,j] !=0:
 #                MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
 
-                
     return (MapL, MapR)
-    
+
 
 def plotFig(Map, N):
     HW = int((N-1)/2)
@@ -97,7 +91,6 @@ def plotFig(Map, N):
 
 # Recusively call itself for lower lever Map
 def getDisparityMap(L, R, N, M, scale):
-    
 
     (sx,sy) = scaleIm(L, 1/8, N).shape
     MapL = np.zeros((sx,sy)).astype(int)
@@ -108,42 +101,41 @@ def getDisparityMap(L, R, N, M, scale):
     minR = MapR.min()
     MapL = cv2.medianBlur(np.uint8(MapL-minL),3)+minL
     MapR = cv2.medianBlur(np.uint8(MapR-minR),3)+minR
-    plotFig(MapL,N)
-    plotFig(MapR,N)
-    
+    #plotFig(MapL,N)
+    #plotFig(MapR,N)
+
     (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/4, False)
     minL = MapL.min()
     minR = MapR.min()
     MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
     MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
-    plotFig(MapL,N)
-    plotFig(MapR,N)
-    
+    #plotFig(MapL,N)
+    #plotFig(MapR,N)
+
     (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/2, False)
     minL = MapL.min()
     minR = MapR.min()
     MapL = cv2.medianBlur(np.uint8(MapL-minL),7)+minL
     MapR = cv2.medianBlur(np.uint8(MapR-minR),7)+minR
-    plotFig(MapL,N)
-    plotFig(MapR,N)
-    
+    #plotFig(MapL,N)
+    #plotFig(MapR,N)
+
     (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1, False)
     minL = MapL.min()
     minR = MapR.min()
     MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
     MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
-    plotFig(MapL,N)
-    plotFig(MapR,N)
+    #plotFig(MapL,N)
+    #plotFig(MapR,N)
 
     return (MapL, MapR)
-    
+
 
 def main():
     N = 7 #Patch size
     M = 2 #Serach readius
     (L, R) = loadImages()
     (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
-
 
 
 if __name__ == "__main__":
