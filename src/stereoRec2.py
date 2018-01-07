@@ -4,12 +4,20 @@ from skimage.feature import match_template
 from matplotlib import pyplot as plt
 
 
-def loadImages():
-    L = np.float32(cv2.imread('../data/TsukubaL.png',0))
-    R = np.float32(cv2.imread('../data/TsukubaR.png',0))
-   # L = np.float32(cv2.imread('../data/map/im0.pgm',0))
-   # R = np.float32(cv2.imread('../data/map/im1.pgm',0))
-    return (L, R)
+def loadImages(name="Tsukuba"):
+    if name=="Tsukuba":
+        L = np.float32(cv2.imread('../data/tsukuba/scene1.row3.col1.ppm',0))
+        R = np.float32(cv2.imread('../data/tsukuba/scene1.row3.col3.ppm',0))
+        ref = np.float32(cv2.imread('../data/tsukuba/truedisp.row3.col3.pgm',0))
+    elif name == "map":
+        L = np.float32(cv2.imread('../data/map/im0.pgm',0))
+        R = np.float32(cv2.imread('../data/map/im1.pgm',0))
+        ref = np.float32(cv2.imread('../data/map/disp1.pgm',0))
+    elif name == "venus":
+        L = np.float32(cv2.imread('../data/venus/im0.pgm',0))
+        R = np.float32(cv2.imread('../data/venus/im6.ppm',0))
+        ref = np.float32(cv2.imread('../data/venus/disp6.pgm',0))
+    return (L, R, ref)
 
 # Scales image suche that scaledIm.shape[0] % N = 0
 def scaleIm(I, scale, N):
@@ -80,13 +88,14 @@ def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
     return (MapL, MapR)
 
 
-def plotFig(Map, N):
+def plotFig(Map, name, N, M):
     HW = int((N-1)/2)
     plt.figure()
     (sx,sy) = Map.shape
     plt.imshow(Map[HW:sx-HW,HW:sy-HW],cmap = 'gray')
     plt.colorbar()
-    plt.show()
+    plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
+    #plt.show()
 
 
 # Recusively call itself for lower lever Map
@@ -132,10 +141,13 @@ def getDisparityMap(L, R, N, M, scale):
 
 
 def main():
-    N = 7 #Patch size
-    M = 2 #Serach readius
-    (L, R) = loadImages()
-    (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
+    #N = 7 #Patch size
+    M = 1 #Search radius
+    for N in [3,5,7,9,11]:
+        for name in ["Tsukuba", "map", "venus"]:
+            (L, R, _) = loadImages(name)
+            (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
+            plotFig(MapL, name, N, M)
 
 
 if __name__ == "__main__":
