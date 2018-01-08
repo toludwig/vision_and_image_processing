@@ -20,7 +20,7 @@ def loadImages(name="Tsukuba"):
         ref = np.float32(cv2.imread('../data/venus/disp2.pgm',0)) / 8
     return (L, R, ref)
 
-# Scales image suche that scaledIm.shape[0] % N = 0
+
 def scaleIm(I, scale, N):
     halfwidth = np.int((N-1)/2)
     I = cv2.resize(I, (0,0), fx=scale, fy=scale)
@@ -48,6 +48,8 @@ def computeMap(L, R, N, M, scale, OldMap):
     (rows, cols) = L.shape
     rows = rows
     cols = cols
+    cnt = 0
+    
     NewMap = np.zeros((rows, cols))
     for rowInd in range(halfwidth, rows - halfwidth):
         for colInd in range(halfwidth, cols - halfwidth):
@@ -57,10 +59,13 @@ def computeMap(L, R, N, M, scale, OldMap):
             signal = match_template(rrow, lrow)
             signInd = int(np.argmax(signal))
 
-            if signal[0,signInd] < 0.5:
-                NewMap[rowInd, colInd] = 0
+            if signal[0,signInd] < 0.2:
+                NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
+
+                cnt = cnt +1
             else:
                 NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
+    print(cnt,rows*cols)
     return NewMap
 
 def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
@@ -78,79 +83,111 @@ def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
     MapR = computeMap(R, L, N, M, scale, MapR)
 
     # twoway matching, if MapL and MapR do not correspond, take the mean
-    # for i in range(sx):
-    #     for j in range(sy):
-    #         if MapR[i,j + int(MapL[i,j])] != -MapL[i,j]:
-    #             MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
-    # for i in range(sx):
-    #     for j in range(sy):
-    #         if MapL[i,j + int(MapL[i,j])] != -MapR[i,j]:
-    #             MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
-
+#    for i in range(sx):
+#        for j in range(sy):
+#            if MapR[i,j + int(MapL[i,j])] != -MapL[i,j]:
+#                MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
+#    for i in range(sx):
+#        for j in range(sy):
+#            if MapL[i,j + int(MapR[i,j])] != -MapR[i,j]:
+#                MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
+#
     return (MapL, MapR)
 
 
-def plotFig(Map, name, N, M):
+def plotFig(Map, name, N, M,scale, LR):
     HW = int((N-1)/2)
     plt.figure()
     (sx,sy) = Map.shape
     plt.imshow(Map[HW:sx-HW,HW:sy-HW],cmap = 'gray')
     plt.colorbar()
-    plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
+    #plt.savefig("../resultsF/" + name +LR + "N" + str(N) + "M" + str(M) + "scale" + str(int(scale*8)) +".png", dpi=200)
+    plt.show()
+    #plt.close()
+    
+def saveFig(Map, name, N, M, LR):
+    plt.figure()
+    plt.imshow(Map,cmap = 'gray')
+    plt.colorbar()
+    plt.savefig("../resultsF/" + name + LR + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
     plt.close()
-    #plt.show()
 
 
-# Recusively call itself for lower lever Map
-def getDisparityMap(L, R, N, M, scale):
+# Compute maps for each level
+def getDisparityMap(L, R, N, M, name):
 
     (sx,sy) = scaleIm(L, 1/8, N).shape
     MapL = np.zeros((sx,sy)).astype(int)
     MapR = MapL
+    isFirst = True
 
-    (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/8, True)
-    minL = MapL.min()
-    minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),3)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),3)+minR
-    #plotFig(MapL,N)
-    #plotFig(MapR,N)
+    for (scale, md) in [(1/8,3), (1/4,5), (1/2,7), (1,5)]:
+        (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, scale, isFirst)
+        minL = MapL.min()
+        minR = MapR.min()
+        MapL = cv2.medianBlur(np.uint8(MapL-minL),md)+minL
+        MapR = cv2.medianBlur(np.uint8(MapR-minR),md)+minR
+        
+        plotFig(MapL, name, N, M, scale, "L")
+        plotFig(MapR, name, N, M, scale, "R")
+        isFirst = False
 
-    (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/4, False)
-    minL = MapL.min()
-    minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
-    #plotFig(MapL,N)
-    #plotFig(MapR,N)
-
-    (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1/2, False)
-    minL = MapL.min()
-    minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),7)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),7)+minR
-    #plotFig(MapL,N)
-    #plotFig(MapR,N)
-
-    (MapL, MapR) = pyramidLevel(L,R, MapL, MapR, N, M, 1, False)
-    minL = MapL.min()
-    minR = MapR.min()
-    MapL = cv2.medianBlur(np.uint8(MapL-minL),5)+minL
-    MapR = cv2.medianBlur(np.uint8(MapR-minR),5)+minR
-    #plotFig(MapL,N)
-    #plotFig(MapR,N)
 
     return (MapL, MapR)
 
 
 def main():
-    #N = 7 #Patch size
-    M = 1 #Search radius
-    for N in [3,5,7,9,11]:
-        for name in ["Tsukuba", "map", "venus"]:
-            (L, R, _) = loadImages(name)
-            (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
-            plotFig(MapL, name, N, M)
+    
+    runAll = False
+    
+    if runAll:
+        #N = 7 #Patch size
+        for M in [2]: #Search radius
+            for N in [5,7]:
+                for name in ["venus","Tsukuba"]:
+                    (L, R, ref) = loadImages(name)
+                    (MapL, MapR) = getDisparityMap(R, L, N, M, name)
+                    (mx,my) = MapL.shape
+                    HW = int((N-1)/2)
+        
+                    if np.sum(MapL)> np.sum(MapR):
+                        result = MapL[HW:mx-HW,HW:my-HW]
+                    else:
+                        result = MapR[HW:mx-HW,HW:my-HW]
+                    err = result -ref
+                    mean = np.mean(err)
+                    std =np.std(err)
+                    numLarge = len(np.where(err >= 3)[0])
+                
+                    print(name, M, N, mean, std, numLarge)
+                    saveFig(MapL, name, N, M, "L")
+                    saveFig(MapR, name, N, M, "R")
+    else:
+        
+        N = 7 #Patch size
+        M = 3 #Search radius
+        name = "map"
+        
+        (L, R, ref) = loadImages(name)
+        (MapL, MapR) = getDisparityMap(R, L, N, M, name)
+        (mx,my) = MapL.shape
+        HW = int((N-1)/2)
+
+        if np.sum(MapL)> np.sum(MapR):
+            result = MapL[HW:mx-HW,HW:my-HW]
+        else:
+            result = MapR[HW:mx-HW,HW:my-HW]
+        err = result -ref
+        mean = np.mean(err)
+        std =np.std(err)
+        numLarge = len(np.where(err >= 3)[0])
+    
+        print(name, M, N, mean, std, numLarge)
+        
+        plotFig(MapL, name, N, M,1, "L")
+        plotFig(MapR, name, N, M,1, "R")
+                
+                
 
 
 if __name__ == "__main__":
