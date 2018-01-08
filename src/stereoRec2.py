@@ -57,7 +57,7 @@ def computeMap(L, R, N, M, scale, OldMap):
             signal = match_template(rrow, lrow)
             signInd = int(np.argmax(signal))
 
-            if signal[0,signInd] < 0.5:
+            if signal[0,signInd] < 0.2:
                 NewMap[rowInd, colInd] = 0
             else:
                 NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
@@ -94,11 +94,12 @@ def plotFig(Map, name, N, M):
     HW = int((N-1)/2)
     plt.figure()
     (sx,sy) = Map.shape
-    plt.imshow(Map[HW:sx-HW,HW:sy-HW],cmap = 'gray')
+    Map = abs(Map) * 8 # TEST
+    plt.imshow(Map[HW:sx-HW,HW:sy-HW], cmap='gray')
     plt.colorbar()
-    plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
-    plt.close()
-    #plt.show()
+    #plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
+    #plt.close()
+    plt.show()
 
 
 # Recusively call itself for lower lever Map
@@ -145,12 +146,12 @@ def getDisparityMap(L, R, N, M, scale):
 
 def main():
     #N = 7 #Patch size
-    M = 1 #Search radius
+    M = 2 #Search radius
     for N in [3,5,7,9,11]:
-        for name in ["Tsukuba", "map", "venus"]:
+        for name in ["map", "Tsukuba", "venus"]:
             (L, R, _) = loadImages(name)
-            (MapL, MapR) = getDisparityMap(R, L, N, M, 1)
-            plotFig(MapL, name, N, M)
+            (MapL, MapR) = getDisparityMap(L, R, N, M, 1)
+            plotFig(MapR, name, N, M)
 
 
 if __name__ == "__main__":
