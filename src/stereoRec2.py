@@ -94,7 +94,7 @@ def plotFig(Map, name, N, M):
     HW = int((N-1)/2)
     plt.figure()
     (sx,sy) = Map.shape
-    Map = abs(Map) * 8 # TEST
+    Map = abs(Map)
     plt.imshow(Map[HW:sx-HW,HW:sy-HW], cmap='gray')
     plt.colorbar()
     #plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
@@ -102,7 +102,6 @@ def plotFig(Map, name, N, M):
     plt.show()
 
 
-# Recusively call itself for lower lever Map
 def getDisparityMap(L, R, N, M, scale):
 
     (sx,sy) = scaleIm(L, 1/8, N).shape
@@ -145,13 +144,12 @@ def getDisparityMap(L, R, N, M, scale):
 
 
 def main():
-    #N = 7 #Patch size
-    M = 2 #Search radius
-    for N in [3,5,7,9,11]:
-        for name in ["map", "Tsukuba", "venus"]:
-            (L, R, _) = loadImages(name)
-            (MapL, MapR) = getDisparityMap(L, R, N, M, 1)
-            plotFig(MapR, name, N, M)
+    N = 5 #Patch size
+    M = 12 #Search radius
+    name = "Tsukuba"
+    (L, R, _) = loadImages(name)
+    (MapL, MapR) = getDisparityMap(L, R, N, M, 1)
+    plotFig(MapR, name, N, M)
 
 
 if __name__ == "__main__":
