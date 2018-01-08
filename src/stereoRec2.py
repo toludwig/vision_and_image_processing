@@ -5,18 +5,19 @@ from matplotlib import pyplot as plt
 
 
 def loadImages(name="Tsukuba"):
+    # NOTE the disparities of the ground trough references are scaled by 8
     if name=="Tsukuba":
         L = np.float32(cv2.imread('../data/tsukuba/scene1.row3.col1.ppm',0))
         R = np.float32(cv2.imread('../data/tsukuba/scene1.row3.col3.ppm',0))
-        ref = np.float32(cv2.imread('../data/tsukuba/truedisp.row3.col3.pgm',0))
+        ref = np.float32(cv2.imread('../data/tsukuba/truedisp.row3.col3.pgm',0)) / 8
     elif name == "map":
         L = np.float32(cv2.imread('../data/map/im0.pgm',0))
         R = np.float32(cv2.imread('../data/map/im1.pgm',0))
-        ref = np.float32(cv2.imread('../data/map/disp1.pgm',0))
+        ref = np.float32(cv2.imread('../data/map/disp1.pgm',0)) / 8
     elif name == "venus":
-        L = np.float32(cv2.imread('../data/venus/im0.pgm',0))
+        L = np.float32(cv2.imread('../data/venus/im2.ppm',0))
         R = np.float32(cv2.imread('../data/venus/im6.ppm',0))
-        ref = np.float32(cv2.imread('../data/venus/disp6.pgm',0))
+        ref = np.float32(cv2.imread('../data/venus/disp2.pgm',0)) / 8
     return (L, R, ref)
 
 # Scales image suche that scaledIm.shape[0] % N = 0
@@ -76,14 +77,15 @@ def pyramidLevel(L, R, MapL, MapR, N, M, scale, isFirst):
     MapL = computeMap(L, R, N, M, scale, MapL)
     MapR = computeMap(R, L, N, M, scale, MapR)
 
-#    for i in range(sx):
-#        for j in range(sy):
-#            if MapR[i,j + int(MapL[i,j])]+MapL[i,j] !=0:
-#                MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
-#    for i in range(sx):
-#        for j in range(sy):
-#            if MapL[i,j + int(MapR[i,j])]+MapR[i,j] !=0:
-#                MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
+    # twoway matching, if MapL and MapR do not correspond, take the mean
+    # for i in range(sx):
+    #     for j in range(sy):
+    #         if MapR[i,j + int(MapL[i,j])] != -MapL[i,j]:
+    #             MapL[i,j] = (-MapR[i,j + int(MapL[i,j])]+MapL[i,j])/2
+    # for i in range(sx):
+    #     for j in range(sy):
+    #         if MapL[i,j + int(MapL[i,j])] != -MapR[i,j]:
+    #             MapR[i,j] = (-MapL[i,j + int(MapR[i,j])]+MapR[i,j])/2
 
     return (MapL, MapR)
 
@@ -95,6 +97,7 @@ def plotFig(Map, name, N, M):
     plt.imshow(Map[HW:sx-HW,HW:sy-HW],cmap = 'gray')
     plt.colorbar()
     plt.savefig("../results/" + name + "N" + str(N) + "M" + str(M) + ".png", dpi=200)
+    plt.close()
     #plt.show()
 
 

@@ -9,7 +9,7 @@ from stereoRec2 import loadImages, getDisparityMap, plotFig
 def disparity_error_statistics(our, ref):
     if np.shape(our) != np.shape(ref): # if dims don't fit, it's probably because of lost margins
         our = resize(our, np.shape(ref)) # correct this, by resizing to the same size
-    err = our-ref
+    err = np.abs(our-ref) # ignore sign of error
     # return mean and std of the error, and count large ones
     return [np.mean(err), np.std(err), len(np.where(err >= 3)[0])]
 
@@ -20,8 +20,10 @@ if __name__ == "__main__":
         L, R, ref = loadImages(name)
         # test hyperparams
         for N in [3, 5, 7, 9, 11]:
-            for M in [1, 2, 3]:
+            for M in [#1, 2, 3,
+                    4, 5, 6]:
                 MapL, _ = getDisparityMap(L, R, N, M, 1)
+                MapL = np.abs(MapL) # ignore sign of disparity
                 plotFig(MapL, name, N, M)
                 stats = disparity_error_statistics(MapL, ref)
-                print(N, M, *stats)
+                print(N, "&", M, "&", stats[0], "&", stats[1], "&", stats[2], "\\\\")
