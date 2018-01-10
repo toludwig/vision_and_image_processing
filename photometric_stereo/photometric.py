@@ -19,16 +19,17 @@ def beethoven():
     plt.show()
 
     N = M / albedo # normal field by normalizing M by albedo
-    print(N)
-    n1 = np.zeros(np.shape(mask))
+    n1 = np.ones(np.shape(mask))
     n1[mask_coords] = N[0]
-    n2 = np.zeros(np.shape(mask))
+    plt.imshow(n1)
+    plt.show()
+    n2 = np.ones(np.shape(mask))
     n2[mask_coords] = N[1]
-    n3 = np.zeros(np.shape(mask))
+    n3 = np.ones(np.shape(mask))
     n3[mask_coords] = N[2]
     Z = ps.simchony_integrate(n1, n2, n3, mask)
     Z = np.nan_to_num(Z)
-    print(Z)
+    print(len(np.where(Z==0)[0]))
     ps.display_depth_matplotlib(Z)
 
 
