@@ -49,7 +49,7 @@ def computeMap(L, R, N, M, scale, OldMap):
     rows = rows
     cols = cols
     cnt = 0
-    
+
     NewMap = np.zeros((rows, cols))
     for rowInd in range(halfwidth, rows - halfwidth):
         for colInd in range(halfwidth, cols - halfwidth):
@@ -61,8 +61,8 @@ def computeMap(L, R, N, M, scale, OldMap):
 
             if signal[0,signInd] < 0.2:
                 NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
-
                 cnt = cnt +1
+
             else:
                 NewMap[rowInd, colInd]=range(max(halfwidth,offset - M),min(offset + M+1, cols-halfwidth))[signInd] - colInd
     print(cnt,rows*cols)
@@ -99,12 +99,13 @@ def plotFig(Map, name, N, M,scale, LR):
     HW = int((N-1)/2)
     plt.figure()
     (sx,sy) = Map.shape
-    plt.imshow(Map[HW:sx-HW,HW:sy-HW],cmap = 'gray')
+    Map = abs(Map)
+    plt.imshow(Map[HW:sx-HW,HW:sy-HW], cmap='gray')
     plt.colorbar()
     #plt.savefig("../resultsF/" + name +LR + "N" + str(N) + "M" + str(M) + "scale" + str(int(scale*8)) +".png", dpi=200)
     plt.show()
     #plt.close()
-    
+
 def saveFig(Map, name, N, M, LR):
     plt.figure()
     plt.imshow(Map,cmap = 'gray')
@@ -115,7 +116,6 @@ def saveFig(Map, name, N, M, LR):
 
 # Compute maps for each level
 def getDisparityMap(L, R, N, M, name):
-
     (sx,sy) = scaleIm(L, 1/8, N).shape
     MapL = np.zeros((sx,sy)).astype(int)
     MapR = MapL
@@ -127,7 +127,7 @@ def getDisparityMap(L, R, N, M, name):
         minR = MapR.min()
         MapL = cv2.medianBlur(np.uint8(MapL-minL),md)+minL
         MapR = cv2.medianBlur(np.uint8(MapR-minR),md)+minR
-        
+
         plotFig(MapL, name, N, M, scale, "L")
         plotFig(MapR, name, N, M, scale, "R")
         isFirst = False
@@ -137,9 +137,9 @@ def getDisparityMap(L, R, N, M, name):
 
 
 def main():
-    
+
     runAll = False
-    
+
     if runAll:
         #N = 7 #Patch size
         for M in [2]: #Search radius
@@ -149,7 +149,7 @@ def main():
                     (MapL, MapR) = getDisparityMap(R, L, N, M, name)
                     (mx,my) = MapL.shape
                     HW = int((N-1)/2)
-        
+
                     if np.sum(MapL)> np.sum(MapR):
                         result = MapL[HW:mx-HW,HW:my-HW]
                     else:
@@ -158,16 +158,16 @@ def main():
                     mean = np.mean(err)
                     std =np.std(err)
                     numLarge = len(np.where(err >= 3)[0])
-                
+
                     print(name, M, N, mean, std, numLarge)
                     saveFig(MapL, name, N, M, "L")
                     saveFig(MapR, name, N, M, "R")
     else:
-        
+
         N = 7 #Patch size
         M = 3 #Search radius
         name = "map"
-        
+
         (L, R, ref) = loadImages(name)
         (MapL, MapR) = getDisparityMap(R, L, N, M, name)
         (mx,my) = MapL.shape
@@ -181,13 +181,11 @@ def main():
         mean = np.mean(err)
         std =np.std(err)
         numLarge = len(np.where(err >= 3)[0])
-    
+
         print(name, M, N, mean, std, numLarge)
-        
+
         plotFig(MapL, name, N, M,1, "L")
         plotFig(MapR, name, N, M,1, "R")
-                
-                
 
 
 if __name__ == "__main__":
